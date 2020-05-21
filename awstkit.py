@@ -76,6 +76,8 @@ def checkcerts(region, allregions, expired, pending):
         print(check_certs(region))
     except be.NoCredentialsError as e:
         logger.critical("No credentials found.", exc_info=True)
+    except Exception as e:
+        logger.critical("Unexpected exception.", exc_info=True)
     finally:
         logger.debug("End search for certs")
 
@@ -93,7 +95,7 @@ def findami(ami_id, region):
         click.option
 
     Arguments:
-        ami_id {[string]} -- A lkist of ami IDs.
+        ami_id {[string]} -- A list of ami IDs.
         region {String} -- The single region to search.
         allregions {Flag} -- Set this flag if all regions are to be searched.
     """
