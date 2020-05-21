@@ -1,13 +1,15 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
 The CLI program "findami"
 """
+
 import logging
+
 import boto3
 from botocore.exceptions import ClientError
-from utilities.utils import print_progress
-from utilities.utils import get_regions
-from utilities.utils import dict_from_tuple
+
+from . import utils
+
 
 def get_ami_allregions(ami_id, specific_region):
     """Returns a dictionary enriched with AWS information about images.
@@ -18,10 +20,10 @@ def get_ami_allregions(ami_id, specific_region):
         Value is the result of describe_images()
     """
     logger = logging.getLogger(__name__)
-    ami_dict = dict_from_tuple(ami_id)
+    ami_dict = utils.dict_from_tuple(ami_id)
     logger.debug('Search regions %s', specific_region)
     n = -1
-    for region in get_regions('ec2'):
+    for region in utils.get_regions('ec2'):
         n = n + 1
         logger.debug(str('Attempting region {} ').format(region))
         if (specific_region and specific_region is region) or not specific_region:
