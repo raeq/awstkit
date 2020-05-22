@@ -25,11 +25,10 @@ def get_ami_allregions(ami_id, specific_region):
     n = -1
     for region in utils.get_regions('ec2'):
         n = n + 1
-        logger.debug(str('Attempting region {} ').format(region))
+        logger.debug(str(f"Attempting region {region} "))
         if (specific_region and specific_region is region) or not specific_region:
             ans = get_ami_info(ami_dict, region, n)
 
-    #print_progress(15, 15, '', 'Finished', 1)
     return ami_dict
 
 
@@ -48,10 +47,8 @@ def get_ami_info(ami_dict, region, n=0):
     ec2_client = boto3.client('ec2', region_name=region)
     for ami_id in ami_dict:
 
-        #print_progress(n, 15, str(region), str(ami_id), 1)
-
         if not ami_dict[ami_id]:
-            logger.debug(str('Searching for {} in {}').format(ami_id, region))
+            logger.debug(str(f"Searching for {ami_id} in {region}"))
             try:
                 ami_info = ec2_client.describe_images(
                     ImageIds=[ami_id])['Images'][0]
@@ -61,6 +58,5 @@ def get_ami_info(ami_dict, region, n=0):
                     'Found {} [{}]').format(ami_id, ami_info))
             except ClientError as e:
                 logger.log(logging.DEBUG, e.response)
-                #print("Error: {} in {}".format(e.message, region))
             except IndexError:
                 return {}

@@ -20,6 +20,7 @@ def _get_certs(specific_region):
 
     certs = []
     available_regions = utils.get_regions("acm")
+
     if specific_region != "":
         if specific_region in available_regions:
             logger.debug(
@@ -34,7 +35,7 @@ def _get_certs(specific_region):
 
     for region in available_regions:
 
-        logger.debug("Searching %s for certs.", region)
+        logger.debug(f"Searching '{region}' for certs.")
         client = boto3.client("acm", region_name=region)
 
         try:
@@ -73,8 +74,8 @@ def _check_one_item(mycert):
             mycert["Certificate"]["Status"],
         )
     else:
-        logger.info("Cert %s certificate transparency logging is disabled.",
-                    mycert.url)
+        logger.info(f"Cert '{mycert.url}' certificate transparency logging is"
+                    f" disabled.")
 
 
 def check_certs(specific_region):
