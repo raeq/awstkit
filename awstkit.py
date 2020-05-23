@@ -13,6 +13,7 @@ from botocore import exceptions as be
 
 from tools.checkcerts import check_certs
 from tools.findami import get_ami_allregions
+from tools.list_accounts import list_all_accounts
 
 LOGCONFIG = "logging_config.ini"
 
@@ -36,6 +37,15 @@ def cli():
     """
     pass
 
+
+@cli.command()
+@click.option("--profile", "-p", required=False, default="default", help=
+"The awscli configuration profile for the master account.")
+def listaccounts(profile: str):
+    """Lists all accounts in an Organization.
+    """
+    import pprint
+    pprint.pprint(list_all_accounts(profile))
 
 @cli.command()
 @click.option("--region", "-r", default="", help="single region to query")
@@ -62,7 +72,6 @@ def checkcerts(region, allregions, expired, pending):
     *Certificate Transparency Logging Enabled
     *Pending Validation
     *Expired
-
 
     
     Arguments:
