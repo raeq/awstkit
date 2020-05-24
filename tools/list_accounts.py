@@ -3,33 +3,24 @@
 The CLI program "listaccounts"
 """
 import logging
-import pprint
+import re
+import sys
 
 import boto3
+from botocore.exceptions import ClientError
 
 hierarchy: dict = dict()
 
 
-def getaccts_for_ou(ouid) -> list:
-    """getaccts_for_ou.
-
-    Args:
-        ouid:
-
-    Returns:
-        list:
-    """
-    return []
-
-
-def get_ou_ids(parent_id, client) -> list:
+def get_ou_ids(parent_id, client, full_result=None) -> list:
     """get_ou_ids.
 
     Args:
         parent_id:
         client:
     """
-    full_result = []
+    if full_result is None:
+        full_result = []
 
     paginator = client.get_paginator("list_children")
     iterator = paginator.paginate(ParentId=parent_id,
@@ -40,11 +31,55 @@ def get_ou_ids(parent_id, client) -> list:
             # 1. Add entry
             # 2. Fetch children recursively
 
-            temp = client.describe_organizational_unit(
+            temp: dict = client.describe_organizational_unit(
                     OrganizationalUnitId=ou["Id"])["OrganizationalUnit"]
 
+            # get child accounts list_children
+            children = client.list_accounts_for_parent(
+                    ParentId=ou["Id"])["Accounts"]
+
+            for child in children:
+                if "Accounts" not in temp.keys():
+                    temp["Accounts"] = []
+                temp["Accounts"].append(child)
+
             full_result.append(temp)
-            get_ou_ids(ou["Id"], client)
+            get_ou_ids(ou["Id"], client, full_result)
+
+        # get the node from full_result where we currently are
+        for node in full_result[::-1]:
+            if node["Id"] == parent_id:
+
+                paginator2 = client.get_paginator("list_accounts_for_parent")
+                iterator2 = paginator2.paginate(ParentId=parent_id)
+
+                for page2 in iterator2:
+                    for child in page2["Accounts"]:
+                        if "Accounts" not in full_result[0].keys():
+                            node["Accounts"] = []
+
+                        cid: str = child["Id"]
+                        child["Tags"] = client.list_tags_for_resource(
+                                ResourceId=cid)["Tags"]
+                        child["TagPolicy"] = client.describe_effective_policy(
+                                PolicyType="TAG_POLICY",
+                                TargetId=cid)["EffectivePolicy"]
+                        child[
+                            "ServiceControlPolicy"] = client.list_policies_for_target(
+                                Filter="SERVICE_CONTROL_POLICY",
+                                TargetId=cid)["Policies"]
+                        try:
+                            child[
+                                "DelegatedServices"] = client.list_delegated_services_for_account(
+                                    AccountId=cid)["DelegatedServices"]
+                        except ClientError as e:
+                            if e.response["Error"][
+                                "Code"] == "AccountNotRegisteredException":
+                                child["DelegatedServices"] = []
+
+                        node["Accounts"].append(child)
+
+                break
 
     return full_result
 
@@ -57,7 +92,6 @@ def list_all_accounts(profile: str = "") -> list:
     logger.debug(f"Starting listaccounts cli method with profile '{profile}'.")
 
     session = boto3.session.Session(profile_name=profile)
-    client = session.client("sts")
     org = session.client("organizations")
 
     root = org.list_roots()["Roots"][0]
@@ -65,77 +99,23 @@ def list_all_accounts(profile: str = "") -> list:
 
     org_id = ""
 
-    import re
     p = re.compile(r"o-\w*")
     m = p.search(root["Arn"])
 
     org_id = m.group(0)
 
-    orgdescription = org.describe_organization(
-            Id=org_id)["Organization"]
+    org_description = org.describe_organization(Id=org_id)["Organization"]
 
-    temp_ous = get_ou_ids(parent_id=root_id, client=org)
+    all_ous: list = get_ou_ids(parent_id=root_id,
+                               client=org,
+                               full_result=[root])
+    all_ous[0]["Description"] = org_description
 
-    all_ous: list = list()
-    all_ous.append(root)
-    all_ous.extend(temp_ous)
     return all_ous
 
 
-def _list_all_accounts(profile: str = "") -> list:
-    """list_all_accounts.
-
-    Args:
-        profile (str): profile
-
-    Returns:
-        list:
-    """
-    logger = logging.getLogger(__name__)
-    logger.debug(f"Starting listaccounts cli method with profile '{profile}'.")
-
-    session = boto3.session.Session(profile_name=profile)
-    client = session.client("sts")
-    org = session.client("organizations")
-
-    root_id = org.list_roots()["Roots"][0]["Id"]
-    hierarchy["root"] = root_id
-    all_ous = get_ou_ids(parent_id=root_id, client=org)
-    all_ous[root_id] = "root"
-
-    paginator = org.get_paginator("list_accounts")
-    page_iterator = paginator.paginate()
-
-    pprint.pprint(all_ous)
-
-    accounts: list = []
-
-    for page in page_iterator:
-        print(page)
-
-        for acct in page["Accounts"]:
-            id = acct["Id"]
-            acct["Tags"] = org.list_tags_for_resource(ResourceId=id)["Tags"]
-            acct["Tag Policy"] = org.describe_effective_policy(
-                    PolicyType="TAG_POLICY", TargetId=id)["EffectivePolicy"]
-            acct["Service Control Policy"] = org.list_policies_for_target(
-                    Filter="SERVICE_CONTROL_POLICY", TargetId=id)["Policies"]
-
-            acct["parentou"] = org.list_parents(ChildId=id)["Parents"][0]
-
-            breakpoint()
-            all_ous[acct["parentou"]["Id"]]["account"] = "a"
-
-            accounts.append(acct)
-
-        pprint.pprint(all_ous)
-
-    return accounts
-
-
 if __name__ == "__main__":
-    pprint.pprint(ou_id_list)
 
     logger = logging.getLogger(__name__)
     logger.critical("Not a standalone script.")
-    exit(1)
+    sys.exit(1)
