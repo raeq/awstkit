@@ -6,6 +6,7 @@ import logging
 from pprint import pprint
 
 import boto3
+import botocore
 
 from . import utils
 
@@ -36,20 +37,27 @@ def _get_certs(specific_region):
     for region in available_regions:
 
         logger.debug(f"Searching '{region}' for certs.")
-        client = boto3.client("acm", region_name=region)
-
         try:
-            response_iterator = client.get_paginator(
-                    "list_certificates").paginate()
-        except Exception as e:
-            logger.error("message")
-        else:
-            for p in response_iterator:
-                for i in p["CertificateSummaryList"]:
-                    c = client.describe_certificate(
-                            CertificateArn=i["CertificateArn"])
+            client = boto3.client("acm", region_name=region)
+        except botocore.exceptions.ClientError as e:
+            logger.exception(e)
+            continue
 
-                    certs.append(c)
+        if client:
+            try:
+                response_iterator = client.get_paginator(
+                        "list_certificates").paginate()
+            except Exception as e:
+                logger.exception(e)
+            else:
+                try:
+                    for p in response_iterator:
+                        for i in p["CertificateSummaryList"]:
+                            c = client.describe_certificate(
+                                    CertificateArn=i["CertificateArn"])
+                            certs.append(c)
+                except Exception as e:
+                    logger.warn(e)
     return certs
 
 
