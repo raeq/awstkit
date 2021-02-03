@@ -24,12 +24,12 @@ def _get_certs(specific_region):
     if specific_region != "":
         if specific_region in available_regions:
             logger.debug(
-                f"Searching region {specific_region} in regions {available_regions}."
+                    f"Searching region {specific_region} in regions {available_regions}."
             )
             available_regions = [specific_region]
         else:
             logger.critical(
-                f"Invalid region supplied '{specific_region}' not in regions {available_regions}"
+                    f"Invalid region supplied '{specific_region}' not in regions {available_regions}"
             )
             raise (RuntimeError)
 
@@ -40,14 +40,14 @@ def _get_certs(specific_region):
 
         try:
             response_iterator = client.get_paginator(
-                "list_certificates").paginate()
+                    "list_certificates").paginate()
         except Exception as e:
             logger.error("message")
         else:
             for p in response_iterator:
                 for i in p["CertificateSummaryList"]:
                     c = client.describe_certificate(
-                        CertificateArn=i["CertificateArn"])
+                            CertificateArn=i["CertificateArn"])
 
                     certs.append(c)
     return certs
@@ -62,16 +62,16 @@ def _check_one_item(mycert):
 
     if mycert["Certificate"]["Status"].upper() != "ISSUED":
         logger.info(
-            "Cert %s is not issued (%s).",
-            mycert["Certificate"]["CertificateArn"],
-            mycert["Certificate"]["Status"],
+                "Cert %s is not issued (%s).",
+                mycert["Certificate"]["CertificateArn"],
+                mycert["Certificate"]["Status"],
         )
     elif (mycert["Certificate"]["Options"]
           ["CertificateTransparencyLoggingPreference"].lower() == "enabled"):
         logger.info(
-            "Cert %s transparency logging (%s).",
-            mycert["Certificate"]["CertificateArn"],
-            mycert["Certificate"]["Status"],
+                "Cert %s transparency logging (%s).",
+                mycert["Certificate"]["CertificateArn"],
+                mycert["Certificate"]["Status"],
         )
     else:
         logger.info(f"Cert '{mycert.url}' certificate transparency logging is"

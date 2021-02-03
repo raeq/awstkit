@@ -51,11 +51,11 @@ def get_ami_info(ami_dict, region, n=0):
             logger.debug(str(f"Searching for {ami_id} in {region}"))
             try:
                 ami_info = ec2_client.describe_images(
-                    ImageIds=[ami_id])['Images'][0]
+                        ImageIds=[ami_id])['Images'][0]
                 ami_info['Region'] = region
                 ami_dict[ami_id] = ami_info
                 logger.log(logging.INFO, str(
-                    'Found {} [{}]').format(ami_id, ami_info))
+                        'Found {} [{}]').format(ami_id, ami_info))
             except ClientError as e:
                 logger.log(logging.DEBUG, e.response)
             except IndexError:
