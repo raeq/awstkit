@@ -3,7 +3,6 @@
 CLI tool for getting information about instances and amis.
 """
 
-import logging
 import logging.config
 from os import path
 from pprint import pprint
@@ -27,6 +26,7 @@ def log_path():
 
 
 logging.config.fileConfig(log_path(), disable_existing_loggers=True)
+logger = logging.getLogger(__name__)
 
 __version__ = "0.0.0"
 
@@ -36,7 +36,7 @@ __version__ = "0.0.0"
 def cli():
     """cli.
     """
-    pass
+    logger.debug(f"Application startup.")
 
 
 @cli.command()
@@ -47,7 +47,6 @@ def listaccounts(profile: str):
     """
     import pprint
 
-    logger = logging.getLogger(__name__)
     logger.debug(f"Begin listing accounts using profile {profile}")
 
     try:
@@ -80,7 +79,7 @@ def listaccounts(profile: str):
     certs pending validation. Not pending to include only non-pending certs. If missing: all \
     pending states are included",
 )
-def checkcerts(region, allregions, expired, pending, profile):
+def checkcerts(region, allregions, expired, pending, profile: str):
     """Checks all ACM Certificates in a region or globally.
     Optionally identifies certificates with 
     *Certificate Transparency Logging Enabled
@@ -93,7 +92,6 @@ def checkcerts(region, allregions, expired, pending, profile):
         allregions {[type]} -- [description]
     """
 
-    logger = logging.getLogger(__name__)
     logger.debug(f"Begin search for certs using profile {profile}")
     try:
         print(check_certs(region, profile))
@@ -110,7 +108,7 @@ def checkcerts(region, allregions, expired, pending, profile):
 @click.option("--region", "-r", default="", help="Restrict search to this single region")
 @click.option("--profile", "-p", required=False, default="default", help=
 "The awscli configuration profile for the master account.")
-def findami(ami_id, region, profile):
+def findami(ami_id, region, profile: str):
     """Finds information about AMIs, given a list of ids.
 
     Decorators:
@@ -125,8 +123,6 @@ def findami(ami_id, region, profile):
         allregions {Flag} -- Set this flag if all regions are to be searched.
     """
 
-    logger = logging.getLogger(__name__)
-
     logger.debug(f"Begin search for AMI {ami_id} using profile {profile}")
     try:
         pprint(get_ami_allregions(ami_id, region, profile))
@@ -137,4 +133,8 @@ def findami(ami_id, region, profile):
 
 
 if __name__ == "__main__":
-    cli()
+    try:
+        cli()
+    except Exception as e:
+        logger.exception(e)
+        raise RuntimeError from e
