@@ -25,13 +25,17 @@ Usage: awstkit.py findami [OPTIONS] AMI_ID...
 
   Finds information about AMIs, given a list of ids.
 
+  Decorators:     cli.command     click.argument     click.option
+  click.option
+
   Arguments:     ami_id {[string]} -- A list of ami IDs.     region {String}
   -- The single region to search.     allregions {Flag} -- Set this flag if
   all regions are to be searched.
 
 Options:
-  -r, --region TEXT  Restrict search to this single region
-  --help             Show this message and exit.
+  -r, --region TEXT   Restrict search to this single region
+  -p, --profile TEXT  The awscli configuration profile for the master account.
+  --help              Show this message and exit.
 
 ```
 
@@ -50,13 +54,15 @@ Usage: awstkit.py checkcerts [OPTIONS]
 Options:
   -r, --region TEXT               single region to query
   -a, --allregions                query all ec2 regions
+  -p, --profile TEXT              The awscli configuration profile for the
+                                  master account.
+
   -x, --expired / -nx, --notexpired
                                   Expired to include     expired certs. Not
                                   expired to include only unexpired certs. If
                                   missing: all     expiry states are included
 
-  -p, --pending / -np, --notpending
-                                  Pending to include     certs pending
+  --pending / --notpending        Pending to include     certs pending
                                   validation. Not pending to include only non-
                                   pending certs. If missing: all     pending
                                   states are included
@@ -75,6 +81,7 @@ Usage: awstkit.py listaccounts [OPTIONS]
 Options:
   -p, --profile TEXT  The awscli configuration profile for the master account.
   --help              Show this message and exit.
+
 
 ```
 

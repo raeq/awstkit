@@ -11,7 +11,7 @@ import botocore
 from . import utils
 
 
-def _get_certs(specific_region):
+def _get_certs(specific_region, session):
     """_get_certs.
 
     Args:
@@ -38,7 +38,7 @@ def _get_certs(specific_region):
 
         logger.debug(f"Searching '{region}' for certs.")
         try:
-            client = boto3.client("acm", region_name=region)
+            client = session.client("acm", region_name=region)
         except botocore.exceptions.ClientError as e:
             logger.exception(e)
             continue
@@ -86,7 +86,7 @@ def _check_one_item(mycert):
                     f" disabled.")
 
 
-def check_certs(specific_region):
+def check_certs(specific_region, profile: str = ""):
     """check_certs.
 
     Args:
@@ -97,7 +97,8 @@ def check_certs(specific_region):
 
     logger.debug(f"Checking for certificates in region: {specific_region}")
 
-    for cert in _get_certs(specific_region):
+    session = boto3.session.Session(profile_name=profile)
+    for cert in _get_certs(specific_region, session):
         pprint(cert)
         cert_check_dict[cert["Certificate"]["CertificateArn"]] = cert
         _check_one_item(cert)

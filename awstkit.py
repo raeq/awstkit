@@ -15,6 +15,7 @@ from tools.checkcerts import check_certs
 from tools.findami import get_ami_allregions
 from tools.list_accounts import list_all_accounts
 
+
 LOGCONFIG = "logging_config.ini"
 
 
@@ -45,28 +46,41 @@ def listaccounts(profile: str):
     """Lists all accounts in an Organization.
     """
     import pprint
-    pprint.pprint(list_all_accounts(profile))
+
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Begin listing accounts using profile {profile}")
+
+    try:
+        pprint.pprint(list_all_accounts(profile))
+    except be.NoCredentialsError as e:
+        logger.critical("No credentials found.", exc_info=True)
+    except be.BotoCoreError as e:
+        logger.exception(e)
+    finally:
+        logger.debug("End listing accounts")
+
 
 @cli.command()
 @click.option("--region", "-r", default="", help="single region to query")
 @click.option("--allregions", "-a", is_flag=True, help="query all ec2 regions")
+@click.option("--profile", "-p", required=False, default="default", help=
+"The awscli configuration profile for the master account.")
 @click.option(
-    "--expired/--notexpired",
-    "-x/-nx",
-    default=False,
-    help="Expired to include \
+        "--expired/--notexpired",
+        "-x/-nx",
+        default=False,
+        help="Expired to include \
     expired certs. Not expired to include only unexpired certs. If missing: all \
     expiry states are included",
 )
 @click.option(
-    "--pending/--notpending",
-    "-p/-np",
-    default=False,
-    help="Pending to include \
+        "--pending/--notpending",
+        default=False,
+        help="Pending to include \
     certs pending validation. Not pending to include only non-pending certs. If missing: all \
     pending states are included",
 )
-def checkcerts(region, allregions, expired, pending):
+def checkcerts(region, allregions, expired, pending, profile):
     """Checks all ACM Certificates in a region or globally.
     Optionally identifies certificates with 
     *Certificate Transparency Logging Enabled
@@ -80,9 +94,9 @@ def checkcerts(region, allregions, expired, pending):
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("Begin search for certs")
+    logger.debug(f"Begin search for certs using profile {profile}")
     try:
-        print(check_certs(region))
+        print(check_certs(region, profile))
     except be.NoCredentialsError as e:
         logger.critical("No credentials found.", exc_info=True)
     except Exception as e:
@@ -94,7 +108,9 @@ def checkcerts(region, allregions, expired, pending):
 @cli.command()
 @click.argument("ami_id", nargs=-1, required=True)
 @click.option("--region", "-r", default="", help="Restrict search to this single region")
-def findami(ami_id, region):
+@click.option("--profile", "-p", required=False, default="default", help=
+"The awscli configuration profile for the master account.")
+def findami(ami_id, region, profile):
     """Finds information about AMIs, given a list of ids.
 
     Decorators:
@@ -111,13 +127,13 @@ def findami(ami_id, region):
 
     logger = logging.getLogger(__name__)
 
-    logger.debug("Begin search for AMI %s", ami_id)
+    logger.debug(f"Begin search for AMI {ami_id} using profile {profile}")
     try:
-        pprint(get_ami_allregions(ami_id, region))
+        pprint(get_ami_allregions(ami_id, region, profile))
     except be.NoCredentialsError as e:
         logger.critical("No credentials found.", exc_info=True)
     finally:
-        logger.debug("End search for AMI %s", ami_id)
+        logger.debug(f"End search for AMI {ami_id}")
 
 
 if __name__ == "__main__":

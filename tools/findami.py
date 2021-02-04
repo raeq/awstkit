@@ -11,7 +11,7 @@ from botocore.exceptions import ClientError
 from . import utils
 
 
-def get_ami_allregions(ami_id, specific_region):
+def get_ami_allregions(ami_id, specific_region, profile: str = ""):
     """Returns a dictionary enriched with AWS information about images.
     Searches every AWS region hosting the EC2 service.
 
@@ -27,12 +27,12 @@ def get_ami_allregions(ami_id, specific_region):
         n = n + 1
         logger.debug(str(f"Attempting region {region} "))
         if (specific_region and specific_region is region) or not specific_region:
-            ans = get_ami_info(ami_dict, region, n)
+            ans = get_ami_info(ami_dict, region, profile, n)
 
     return ami_dict
 
 
-def get_ami_info(ami_dict, region, n=0):
+def get_ami_info(ami_dict, region, profile: str = "", n=0):
     """For a specific region, search for ami descriptions
     for each amiid in a dictionary
 
@@ -44,7 +44,8 @@ def get_ami_info(ami_dict, region, n=0):
         n {number} -- current iteration (default: {0})
     """
     logger = logging.getLogger(__name__)
-    ec2_client = boto3.client('ec2', region_name=region)
+    session = boto3.session.Session(profile_name=profile)
+    ec2_client = session.client('ec2', region_name=region)
     for ami_id in ami_dict:
 
         if not ami_dict[ami_id]:
