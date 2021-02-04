@@ -2,23 +2,9 @@
 
 ## Tools in the toolkit:
 
-```
-Usage: awstkit.py [OPTIONS] COMMAND [ARGS]...
-
-  cli.
-
-Options:
-  -V      Show the version and exit.
-  --help  Show this message and exit.
-
-Commands:
-  checkcerts    Checks all ACM Certificates in a region or globally.
-  findami       Finds information about AMIs, given a list of ids.
-  listaccounts  Lists all accounts in an Organization.
-
-```
-
 ## findami
+
+Super useful if you know an AMI's id, but don't know which region it is in.
 
 ```
 Usage: awstkit.py findami [OPTIONS] AMI_ID...
@@ -40,6 +26,9 @@ Options:
 ```
 
 ## checkcerts
+
+Super useful to understand your certificates. Iterates through every region and throws an error about invalid client
+token if ACM is not available in the region.
 
 ```
 Usage: awstkit.py checkcerts [OPTIONS]
@@ -72,6 +61,9 @@ Options:
 ```
 
 ## listaccounts
+
+Super useful to list all the OUs and their accounts in your AWS Organization. Throws an error if your profile is not the
+Org's management account.
 
 ```
 Usage: awstkit.py listaccounts [OPTIONS]
