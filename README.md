@@ -77,4 +77,16 @@ Options:
 
 ```
 
+## getkeys
 
+```
+Usage: awstkit.py getkeys [OPTIONS]
+
+  Finds information about KMS keys.
+
+Options:
+  -r, --region TEXT   Restrict search to this single region
+  -p, --profile TEXT  The awscli configuration profile for the master account.
+  --help              Show this message and exit.
+
+```

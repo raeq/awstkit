@@ -12,6 +12,7 @@ from botocore import exceptions as be
 
 from tools.checkcerts import check_certs
 from tools.findami import get_ami_allregions
+from tools.kms_keys import get_keys
 from tools.list_accounts import list_all_accounts
 
 
@@ -130,6 +131,17 @@ def findami(ami_id, region, profile: str):
         logger.critical("No credentials found.", exc_info=True)
     finally:
         logger.debug(f"End search for AMI {ami_id}")
+
+
+@cli.command()
+@click.option("--region", "-r", default="", help="Restrict search to this single region")
+@click.option("--profile", "-p", required=False, default="default", help=
+"The awscli configuration profile for the master account.")
+def getkeys(region: str, profile: str):
+    """Finds information about KMS keys.
+    """
+    k = get_keys(region=region, profile=profile)
+    pprint(k)
 
 
 if __name__ == "__main__":
