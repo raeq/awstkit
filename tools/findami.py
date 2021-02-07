@@ -26,7 +26,7 @@ def get_ami_allregions(ami_id, specific_region, profile: str = ""):
     for region in utils.get_regions('ec2'):
         n = n + 1
         logger.debug(str(f"Attempting region {region} "))
-        if (specific_region and specific_region is region) or not specific_region:
+        if (specific_region and specific_region == region) or not specific_region:
             ans = get_ami_info(ami_dict, region, profile, n)
 
     return ami_dict
