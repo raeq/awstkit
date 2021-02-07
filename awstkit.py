@@ -150,10 +150,10 @@ def getkeys(region: str, profile: str):
 @click.option("--profile", "-p", required=False, default="default", help=
 "The awscli configuration profile for the master account.")
 @click.option("--vpc_destination", "-vd", default="", help="Restrict search to this specific destination vpc")
-@click.option("--source", "-s", default="", help="The source IP address.")
-@click.option("--destination", "-d", default="", help="The destination IP address.")
+@click.option("--source", "-s", default="", help="The source IP address")
+@click.option("--destination", "-d", default="", help="The destination IP address")
 def reachability(vpc_destination: str, region: str, profile: str, source, destination):
-    """Finds information about KMS keys.
+    """Tests the reachability of IP addresses.
     """
     r = is_reachable(vpc=vpc_destination, region=region, profile=profile, src=source, dst=destination, )
     pprint(r)
