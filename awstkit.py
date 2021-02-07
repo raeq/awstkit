@@ -14,6 +14,7 @@ from tools.checkcerts import check_certs
 from tools.findami import get_ami_allregions
 from tools.kms_keys import get_keys
 from tools.list_accounts import list_all_accounts
+from tools.reachability import is_reachable
 
 
 LOGCONFIG = "logging_config.ini"
@@ -142,6 +143,20 @@ def getkeys(region: str, profile: str):
     """
     k = get_keys(region=region, profile=profile)
     pprint(k)
+
+
+@cli.command()
+@click.option("--region", "-r", default="", help="Restrict search to this single region")
+@click.option("--profile", "-p", required=False, default="default", help=
+"The awscli configuration profile for the master account.")
+@click.option("--vpc_destination", "-vd", default="", help="Restrict search to this specific destination vpc")
+@click.option("--source", "-s", default="", help="The source IP address.")
+@click.option("--destination", "-d", default="", help="The destination IP address.")
+def reachability(vpc_destination: str, region: str, profile: str, source, destination):
+    """Finds information about KMS keys.
+    """
+    r = is_reachable(vpc=vpc_destination, region=region, profile=profile, src=source, dst=destination, )
+    pprint(r)
 
 
 if __name__ == "__main__":
