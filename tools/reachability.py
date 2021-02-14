@@ -13,6 +13,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
     logger = logging.getLogger(__name__)
     ips: defaultdict = defaultdict(dict)
     vpcs: defaultdict = defaultdict(dict)
+    instances: defaultdict = defaultdict(dict)
 
     for reg in utils.get_regions("ec2"):
         if (region and region == reg) or not region:
@@ -27,6 +28,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                 for p in response_iterator:
                     for r in p.get("Reservations"):
                         for i in r.get("Instances"):
+                            instances[i.get("InstanceId")] = i
                             if i.get("PublicIpAddress"):
                                 ips[i["PublicIpAddress"]] = i
                             if i.get("PrivateIpAddress"):
@@ -234,8 +236,32 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                                 errors.append(f"Egress rule #{entry.get('RuleNumber')} denies egress to {src}"
                                               f" in {acl.get('NetworkAclId')}")
 
+        if not ingress_msg:
+            errors.append(f"No explicit ingress allow found in {acl.get('NetworkAclId')}")
+        if not egress_msg:
+            errors.append(f"No explicit egress allow found in {acl.get('NetworkAclId')}")
+
         # are we being blocked by security groups?
         if target_eni:
+            # get the ip address dictionary
+            my_ip: dict = public_ips.get(dst)
+            groups: dict = my_ip.get("Groups")
+
+            for group in public_ips[dst].get("Groups"):
+                reg = utils.region_from_az(
+                        public_ips[dst].get("AvailabilityZone"))
+                client = session.client('ec2', region_name=reg)
+
+                group_name = group.get("GroupId")
+                response = client.describe_security_groups(
+                        GroupIds=[group_name]
+                )
+
+                group_data = response['SecurityGroups'][0]
+
+            # get the Groups
+
+            # Iterate rules
             pass
 
         # is the port open?
