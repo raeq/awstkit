@@ -2,9 +2,8 @@
 """
 Common util methods
 """
-import sys
-
 import boto3
+import sys
 
 
 def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=40):
@@ -33,6 +32,22 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_lengt
 
 def get_regions(service='ec2'):
     return boto3.session.Session().get_available_regions(service)
+
+
+def region_from_az(az: str = "") -> str:
+    """
+
+    :param az: us-east-1b
+    :type az: us-east1
+    :return:
+    :rtype:
+    """
+    if not az:
+        return ""
+
+    parts = az.split("-")
+    ret_val = parts[0] + "-" + parts[1] + "-" + parts[2][:-1]
+    return ret_val
 
 
 def dict_from_tuple(tuples):
