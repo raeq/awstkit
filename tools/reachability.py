@@ -4,6 +4,7 @@ from collections import defaultdict
 from pprint import pprint
 
 import boto3
+import netaddr
 
 from . import utils
 
@@ -167,7 +168,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                 if a.get('VpcId') == target_vpc_id:
                     if a.get("State") == "available":
                         target_igw = i
-                        successes.append(f"There is an attached and available IGW {i} for vpc {a.get('VpcId')}")
+                        successes.append(f"There is an attached and available IGW "
+                                         f"{i.get('InternetGatewayId')} for vpc {a.get('VpcId')}")
                         break
 
         if not target_igw:
@@ -198,6 +200,39 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                             errors.append(f"The main route table {route_table.get('RouteTableId')} is blackholed")
 
         # are we being blocked by ACLs?
+        target_acl_assoc = None
+        for acl in target_vpc.get("acl"):
+            for acl_association in acl.get("Associations"):
+                if acl_association.get("SubnetId") == target_subnet.get("SubnetId"):
+                    target_acl_assoc = acl
+
+        if target_acl_assoc:
+            ingress_msg = False
+            egress_msg = False
+
+            for entry in acl.get("Entries"):
+                if entry.get("Egress") == False:
+                    # ingress rule
+                    if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get("CidrBlock")):
+                        if entry.get("RuleAction") == "allow":
+                            successes.append(f"Ingress rule #{entry.get('RuleNumber')} allows ingress from {src}"
+                                             f" in {acl.get('NetworkAclId')}")
+                            ingress_msg = True
+                        else:
+                            if not ingress_msg:
+                                errors.append(f"Ingress rule #{entry.get('RuleNumber')} denies ingress from {src}"
+                                              f" in {acl.get('NetworkAclId')}")
+                else:
+                    # egress rule
+                    if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get("CidrBlock")):
+                        if entry.get("RuleAction") == "allow":
+                            successes.append(f"Egress rule #{entry.get('RuleNumber')} allows egress to {src}"
+                                             f" in {acl.get('NetworkAclId')}")
+                            egress_msg = True
+                        else:
+                            if not egress_msg:
+                                errors.append(f"Egress rule #{entry.get('RuleNumber')} denies egress to {src}"
+                                              f" in {acl.get('NetworkAclId')}")
 
         # are we being blocked by security groups?
         if target_eni:
