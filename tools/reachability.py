@@ -176,11 +176,14 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
         return errors, []
     else:
         target_eni = public_ips.get(dst).get('NetworkInterfaceId')
-        if public_ips.get(dst).get("Status") == "in-use":
-            successes.append(f"The searched for IP address {dst_ip} is in use and "
-                             f"{target_eni} is attached.")
+        if public_ips.get(dst).get('Status') == "in-use":
+            successes.append(
+                f"The searched for IP address {dst_ip} in AZ {public_ips.get(dst).get('AvailabilityZone')} is in use "
+                f"and "
+                f"{target_eni} is attached.")
         else:
-            errors.append(f"The searched for IP address {dst_ip} was found but {target_eni} "
+            errors.append(f"The searched for IP address {dst_ip} was found but {target_eni} in AZ "
+                          f"{public_ips.get(dst).get('AvailabilityZone')} "
                           f"is not attached.")
 
     if src_ip.is_global and dst in public_ips:
