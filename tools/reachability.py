@@ -25,8 +25,8 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                 response_iterator = client.get_paginator(
                         "describe_instances").paginate()
 
-                for p in response_iterator:
-                    for r in p.get("Reservations"):
+                for page in response_iterator:
+                    for r in page.get("Reservations"):
                         for i in r.get("Instances"):
                             instances[i.get("InstanceId")] = i
                             if i.get("PublicIpAddress"):
@@ -244,12 +244,12 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                                          f"IGW {target_igw.get('InternetGatewayId')}"
                             successes.append(igw_routed)
 
-                            # TODO is the route applicable to the src?
+                            # is the route applicable to the src?
                             if netaddr.IPAddress(src) in netaddr.IPNetwork(route.get('DestinationCidrBlock')):
                                 successes.append(
-                                    f"The route table entry to the GW {target_igw.get('InternetGatewayId')} "
-                                    f"has a valid destination "
-                                    f"({route.get('DestinationCidrBlock')}) to src {src}")
+                                        f"The route table entry to the GW {target_igw.get('InternetGatewayId')} "
+                                        f"has a valid destination "
+                                        f"({route.get('DestinationCidrBlock')}) to src {src}")
                             else:
                                 errors.append(f"The route table entry to the GW {target_igw.get('InternetGatewayId')} "
                                               f"does not have a valid destination "
@@ -282,8 +282,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                                 else:
                                     if not ingress_msg:
                                         errors.append(
-                                            f"Ingress rule #{entry.get('RuleNumber')} denies ingress from {src}"
-                                            f" in {acl.get('NetworkAclId')}")
+                                                f"Ingress rule #{entry.get('RuleNumber')} denies ingress from {src}"
+                                                f" in {acl.get('NetworkAclId')}")
                         else:
                             # egress rule
                             if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get("CidrBlock")):
