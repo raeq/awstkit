@@ -281,20 +281,18 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                         if netaddr.IPAddress(src) in netaddr.IPNetwork(ip_range.get('CidrIp')):
                             sg_ingress_msg = f"Security group {group_data.get('GroupId')} \"" \
                                              f"{group_data.get('GroupName')}\" " \
-                                             f"allows " \
-                                             f"ingress to {dst} on " \
-                                             f"protocol {rule.get('IpProtocol')} " \
-                                             f"from {ip_range.get('CidrIp')}"
+                                             f"allows {src} " \
+                                             f"ingress to {dst} in {ip_range.get('CidrIp')} using " \
+                                             f"protocol {rule.get('IpProtocol')} "
 
                 for rule in group_data.get("IpPermissionsEgress"):
                     for ip_range in rule.get("IpRanges"):
-                        if netaddr.IPAddress(src) in netaddr.IPNetwork(ip_range.get('CidrIp')):
+                        if netaddr.IPAddress(dst) in netaddr.IPNetwork(ip_range.get('CidrIp')):
                             sg_egress_msg = f"Security group {group_data.get('GroupId')} \"" \
                                             f"{group_data.get('GroupName')}\" " \
-                                            f"allows " \
-                                            f"egress to {ip_range.get('CidrIp')} on " \
-                                            f"protocol {rule.get('IpProtocol')} " \
-                                            f"from {dst}"
+                                            f"allows {dst} " \
+                                            f"egress to {src} in {ip_range.get('CidrIp')} using " \
+                                            f"protocol {rule.get('IpProtocol')} "
 
                 """
                 {'Description': 'default VPC security group', 'GroupName': 'default', 'IpPermissions': [], 'OwnerId': 
