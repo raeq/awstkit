@@ -241,10 +241,15 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                         if route.get('State') == "active":
                             igw_routed = f"The main route table has a route to the " \
                                          f"IGW {target_igw.get('InternetGatewayId')}"
+                            successes.append(igw_routed)
 
-                if igw_routed:
-                    successes.append(igw_routed)
-                else:
+                            # TODO is the route applicable to the src?
+                            if netaddr.IPAddress(src) in netaddr.IPNetwork(route.get('DestinationCidrBlock')):
+                                successes.append(f"The route table to the GW {target_igw.get('InternetGatewayId')} "
+                                                 f"has a route "
+                                                 f"{route.get('DestinationCidrBlock')} to src {src}")
+
+                if not igw_routed:
                     errors.append(f"The main route table {route_table.get('RouteTableId')} is not routed through "
                                   f"{target_igw.get('InternetGatewayId')}")
 
