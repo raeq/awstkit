@@ -172,15 +172,16 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
 
     # was the ip found?
     if dst not in public_ips:
-        errors.append(f"The searched for IP address {dst_ip} was not found")
+        errors.append(f"The searched for IP address {dst_ip} was not found in your account.")
         return errors, []
     else:
         target_eni = public_ips.get(dst).get('NetworkInterfaceId')
         if public_ips.get(dst).get("Status") == "in-use":
-            successes.append(f"The searched for IP address {dst_ip} is in use by "
-                             f"eni {public_ips.get(dst).get('NetworkInterfaceId')}.")
+            successes.append(f"The searched for IP address {dst_ip} is in use and "
+                             f"{target_eni} is attached.")
         else:
-            errors.append(f"The searched for IP address {dst_ip} was found but is not in use.")
+            errors.append(f"The searched for IP address {dst_ip} was found but {target_eni} "
+                          f"is not attached.")
 
     if src_ip.is_global and dst in public_ips:
 
@@ -245,9 +246,14 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
 
                             # TODO is the route applicable to the src?
                             if netaddr.IPAddress(src) in netaddr.IPNetwork(route.get('DestinationCidrBlock')):
-                                successes.append(f"The route table to the GW {target_igw.get('InternetGatewayId')} "
-                                                 f"has a route "
-                                                 f"{route.get('DestinationCidrBlock')} to src {src}")
+                                successes.append(
+                                    f"The route table entry to the GW {target_igw.get('InternetGatewayId')} "
+                                    f"has a valid destination "
+                                    f"({route.get('DestinationCidrBlock')}) to src {src}")
+                            else:
+                                errors.append(f"The route table entry to the GW {target_igw.get('InternetGatewayId')} "
+                                              f"does not have a valid destination "
+                                              f"({route.get('DestinationCidrBlock')}) to src {src}")
 
                 if not igw_routed:
                     errors.append(f"The main route table {route_table.get('RouteTableId')} is not routed through "
