@@ -90,3 +90,34 @@ Options:
   --help              Show this message and exit.
 
 ```
+
+## reachability
+
+Useful for performing reachability tests to see if an eni has routing from a source ip address.
+
+Can take a very long time in a large account with many VPCs and enis or instances. Use the ```--region```
+and ```--vpc_destination``` flags to be more specific.
+
+Example:
+
+```
+awstkit.py reachability -s 8.8.8.8 -d 10.0.113.30 -r us-east-1 -vd vpc-XXXXXXXXXX
+```
+
+```
+Usage: awstkit.py reachability [OPTIONS]
+
+  Tests the reachability of IP addresses.
+
+Options:
+  -r, --region TEXT            Restrict search to this single region
+  -p, --profile TEXT           The awscli configuration profile for the master
+                               account.
+
+  -vd, --vpc_destination TEXT  Restrict search to this specific destination
+                               vpc
+
+  -s, --source TEXT            The source IP address
+  -d, --destination TEXT       The destination IP address
+  --help                       Show this message and exit.
+```
