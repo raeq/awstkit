@@ -140,10 +140,10 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
         errors.append(f"The searched for IP address {dst_ip} was not found")
         return errors, []
     else:
+        target_eni = public_ips.get(dst).get('NetworkInterfaceId')
         if public_ips.get(dst).get("Status") == "in-use":
             successes.append(f"The searched for IP address {dst_ip} is in use by "
                              f"eni {public_ips.get(dst).get('NetworkInterfaceId')}.")
-            target_eni = public_ips.get(dst).get('NetworkInterfaceId')
         else:
             errors.append(f"The searched for IP address {dst_ip} was found but is not in use.")
 
@@ -204,42 +204,46 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
         # are we being blocked by ACLs?
         target_acl_assoc = None
         for acl in target_vpc.get("acl"):
+            ingress_msg = False
+            egress_msg = False
+
             for acl_association in acl.get("Associations"):
                 if acl_association.get("SubnetId") == target_subnet.get("SubnetId"):
                     target_acl_assoc = acl
 
-        if target_acl_assoc:
-            ingress_msg = False
-            egress_msg = False
-
-            for entry in acl.get("Entries"):
-                if entry.get("Egress") == False:
-                    # ingress rule
-                    if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get("CidrBlock")):
-                        if entry.get("RuleAction") == "allow":
-                            successes.append(f"Ingress rule #{entry.get('RuleNumber')} allows ingress from {src}"
-                                             f" in {acl.get('NetworkAclId')}")
-                            ingress_msg = True
+                    for entry in acl.get("Entries"):
+                        if entry.get("Egress") == False:
+                            # ingress rule
+                            if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get("CidrBlock")):
+                                if entry.get("RuleAction") == "allow":
+                                    successes.append(f"Ingress rule #{entry.get('RuleNumber')} allows ingress from "
+                                                     f"{entry.get('CidrBlock')} "
+                                                     f"using protocol {entry.get('Protocol')} "
+                                                     f"in {acl.get('NetworkAclId')}")
+                                    ingress_msg = True
+                                else:
+                                    if not ingress_msg:
+                                        errors.append(
+                                            f"Ingress rule #{entry.get('RuleNumber')} denies ingress from {src}"
+                                            f" in {acl.get('NetworkAclId')}")
                         else:
-                            if not ingress_msg:
-                                errors.append(f"Ingress rule #{entry.get('RuleNumber')} denies ingress from {src}"
-                                              f" in {acl.get('NetworkAclId')}")
-                else:
-                    # egress rule
-                    if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get("CidrBlock")):
-                        if entry.get("RuleAction") == "allow":
-                            successes.append(f"Egress rule #{entry.get('RuleNumber')} allows egress to {src}"
-                                             f" in {acl.get('NetworkAclId')}")
-                            egress_msg = True
-                        else:
-                            if not egress_msg:
-                                errors.append(f"Egress rule #{entry.get('RuleNumber')} denies egress to {src}"
-                                              f" in {acl.get('NetworkAclId')}")
+                            # egress rule
+                            if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get("CidrBlock")):
+                                if entry.get("RuleAction") == "allow":
+                                    successes.append(f"Egress rule #{entry.get('RuleNumber')} allows egress to "
+                                                     f"{entry.get('CidrBlock')} "
+                                                     f"using protocol {entry.get('Protocol')} "
+                                                     f" in {acl.get('NetworkAclId')}")
+                                    egress_msg = True
+                                else:
+                                    if not egress_msg:
+                                        errors.append(f"Egress rule #{entry.get('RuleNumber')} denies egress to {src}"
+                                                      f" in {acl.get('NetworkAclId')}")
 
-        if not ingress_msg:
-            errors.append(f"No explicit ingress allow found in {acl.get('NetworkAclId')}")
-        if not egress_msg:
-            errors.append(f"No explicit egress allow found in {acl.get('NetworkAclId')}")
+                    if not ingress_msg:
+                        errors.append(f"No explicit ingress allow found in {acl.get('NetworkAclId')}")
+                    if not egress_msg:
+                        errors.append(f"No explicit egress allow found in {acl.get('NetworkAclId')}")
 
         # are we being blocked by security groups?
         if target_eni:
@@ -247,7 +251,11 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
             my_ip: dict = public_ips.get(dst)
             groups: dict = my_ip.get("Groups")
 
-            for group in public_ips[dst].get("Groups"):
+            # get the Groups
+            sg_ingress_msg: str = None
+            sg_egress_msg: str = None
+
+            for group in groups:
                 reg = utils.region_from_az(
                         public_ips[dst].get("AvailabilityZone"))
                 client = session.client('ec2', region_name=reg)
@@ -259,10 +267,47 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
 
                 group_data = response['SecurityGroups'][0]
 
-            # get the Groups
+                # Iterate rules
+                for ingress_rule in group_data.get("IpPermissions"):
+                    for ip_range in ingress_rule.get("IpRanges"):
+                        if netaddr.IPAddress(src) in netaddr.IPNetwork(ip_range.get('CidrIp')):
+                            sg_ingress_msg = f"Security group {group_data.get('GroupId')} \"" \
+                                             f"{group_data.get('GroupName')}\" " \
+                                             f"allows " \
+                                             f"ingress to {dst} on " \
+                                             f"protocol {egress_rule.get('IpProtocol')} " \
+                                             f"from {ip_range.get('CidrIp')}"
 
-            # Iterate rules
-            pass
+                for egress_rule in group_data.get("IpPermissionsEgress"):
+                    for ip_range in egress_rule.get("IpRanges"):
+                        if netaddr.IPAddress(src) in netaddr.IPNetwork(ip_range.get('CidrIp')):
+                            sg_egress_msg = f"Security group {group_data.get('GroupId')} \"" \
+                                            f"{group_data.get('GroupName')}\" " \
+                                            f"allows " \
+                                            f"egress to {ip_range.get('CidrIp')} on " \
+                                            f"protocol {egress_rule.get('IpProtocol')} " \
+                                            f"from {dst}"
+
+                """
+                {'Description': 'default VPC security group', 'GroupName': 'default', 'IpPermissions': [], 'OwnerId': 
+                '287687199621', 'GroupId': 'sg-0c539e6d394ec7dd8', 'IpPermissionsEgress': [{'IpProtocol': '-1', 
+                'IpRanges': [{'CidrIp': '0.0.0.0/0'}], 'Ipv6Ranges': [], 'PrefixListIds': [], 'UserIdGroupPairs': [
+                ]}], 'VpcId': 'vpc-0ef2f414da7392532'}
+                """
+                # look for a specific allow rule. There are no denies in security groups.
+
+                # if we don't yet have a positive outcome
+                # if we have a prefixlistid, get the CIDRs in the prefix list and iterate
+                # get_managed_prefix_list_entries PrefixListId='string'
+
+            if sg_ingress_msg:
+                successes.append(sg_ingress_msg)
+            else:
+                errors.append(f"No security group ingress rule found from source {src}.")
+            if sg_egress_msg:
+                successes.append(sg_egress_msg)
+            else:
+                errors.append(f"No security group egress rule found to destination {dst}.")
 
         # is the port open?
 
