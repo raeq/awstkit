@@ -38,13 +38,14 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
 
             response_iterator = None
             try:
-                response = client.describe_addresses()["Addresses"]
-
-                for i in response:
-                    if i.get("PublicIp"):
-                        ips[i["PublicIp"]] = i
-                    if i.get("PrivateIpAddress"):
-                        ips[i["PrivateIpAddress"]] = i
+                response_iterator = client.get_paginator(
+                        "describe_instances").paginate()
+                for page in response_iterator:
+                    for i in page.get("Addresses"):
+                        if i.get("PublicIp"):
+                            ips[i["PublicIp"]] = i
+                        if i.get("PrivateIpAddress"):
+                            ips[i["PrivateIpAddress"]] = i
             except Exception as e:
                 logger.warning(f"Failed to describe_addresses in region {region} {e}")
 
@@ -53,8 +54,8 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                 response_iterator = client.get_paginator(
                         "describe_network_interfaces").paginate()
 
-                for p in response_iterator:
-                    for i in p["NetworkInterfaces"]:
+                for page in response_iterator:
+                    for i in page["NetworkInterfaces"]:
                         if i.get("Association"):
                             if i.get("Association").get("PublicIp"):
                                 ips[i["Association"]["PublicIp"]] = i
@@ -68,8 +69,8 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                 response_iterator = client.get_paginator(
                         "describe_vpcs").paginate()
 
-                for p in response_iterator:
-                    for v in p["Vpcs"]:
+                for page in response_iterator:
+                    for v in page["Vpcs"]:
 
                         if (vpc and vpc == v["VpcId"]) or not vpc:
 
@@ -78,27 +79,61 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
 
                             # get IGWs
                             response_iterator_igw = client.get_paginator(
-                                    "describe_internet_gateways").paginate()
-                            for p in response_iterator_igw:
-                                vpcs[v["VpcId"]]["igws"] = p["InternetGateways"]
+                                    "describe_internet_gateways").paginate(Filters=[
+                                {
+                                    'Name': 'attachment.vpc-id',
+                                    'Values': [
+                                        v["VpcId"],
+                                    ],
+                                },
+                            ],
+                            )
+                            for page in response_iterator_igw:
+                                vpcs[v["VpcId"]]["igws"] = page.get("InternetGateways")
 
                             # get rts
+
                             response_iterator_rts = client.get_paginator(
-                                    "describe_route_tables").paginate()
-                            for p in response_iterator_rts:
-                                vpcs[v["VpcId"]]["rts"] = p["RouteTables"]
+                                    "describe_route_tables").paginate(Filters=[
+                                {
+                                    'Name': 'vpc-id',
+                                    'Values': [
+                                        v["VpcId"],
+                                    ],
+                                },
+                            ],
+                            )
+                            for page in response_iterator_rts:
+                                vpcs[v["VpcId"]]["rts"] = page.get("RouteTables")
 
                             # get acls
+
                             response_iterator_acl = client.get_paginator(
-                                    "describe_network_acls").paginate()
-                            for p in response_iterator_acl:
-                                vpcs[v["VpcId"]]["acl"] = p["NetworkAcls"]
+                                    "describe_network_acls").paginate(Filters=[
+                                {
+                                    'Name': 'vpc-id',
+                                    'Values': [
+                                        v["VpcId"],
+                                    ],
+                                },
+                            ],
+                            )
+                            for page in response_iterator_acl:
+                                vpcs[v["VpcId"]]["acl"] = page.get("NetworkAcls")
 
                             # get subnets
                             response_iterator_subs = client.get_paginator(
-                                    "describe_subnets").paginate()
-                            for p in response_iterator_subs:
-                                vpcs[v["VpcId"]]["subnets"] = p["Subnets"]
+                                    "describe_subnets").paginate(Filters=[
+                                {
+                                    'Name': 'vpc-id',
+                                    'Values': [
+                                        v["VpcId"],
+                                    ],
+                                },
+                            ],
+                            )
+                            for page in response_iterator_subs:
+                                vpcs[v["VpcId"]]["subnets"] = page.get("Subnets")
 
             except Exception as e:
                 logger.warning(f"Failed to describe VPCs in region {region} {e}")
@@ -198,16 +233,20 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                     errors.append(f'The subnet used by the ip {dst} '
                                   f'has the range {subnet.get("CidrBlock")} '
                                   f'and has the state {subnet.get("State")} ')
-
+        igw_routed: str = None
         for route_table in target_vpc.get("rts"):
             if route_table.get("VpcId") == target_vpc_id:
                 for route in route_table.get("Routes"):
                     if route.get("GatewayId") == target_igw.get('InternetGatewayId'):
                         if route.get('State') == "active":
-                            successes.append(f"The main route table has a route to the "
-                                             f"IGW {target_igw.get('InternetGatewayId')} ")
-                        else:
-                            errors.append(f"The main route table {route_table.get('RouteTableId')} is blackholed")
+                            igw_routed = f"The main route table has a route to the " \
+                                         f"IGW {target_igw.get('InternetGatewayId')}"
+
+                if igw_routed:
+                    successes.append(igw_routed)
+                else:
+                    errors.append(f"The main route table {route_table.get('RouteTableId')} is not routed through "
+                                  f"{target_igw.get('InternetGatewayId')}")
 
         # are we being blocked by ACLs?
         target_acl_assoc = None
