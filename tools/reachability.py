@@ -212,8 +212,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
         # are we being blocked by ACLs?
         target_acl_assoc = None
         for acl in target_vpc.get("acl"):
-            ingress_msg: str = None
-            egress_msg: str = None
+            ingress_msg: str = ""
+            egress_msg: str = ""
 
             for acl_association in acl.get("Associations"):
                 if acl_association.get("SubnetId") == target_subnet.get("SubnetId"):
@@ -276,24 +276,24 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                 group_data = response['SecurityGroups'][0]
 
                 # Iterate rules
-                for ingress_rule in group_data.get("IpPermissions"):
-                    for ip_range in ingress_rule.get("IpRanges"):
+                for rule in group_data.get("IpPermissions"):
+                    for ip_range in rule.get("IpRanges"):
                         if netaddr.IPAddress(src) in netaddr.IPNetwork(ip_range.get('CidrIp')):
                             sg_ingress_msg = f"Security group {group_data.get('GroupId')} \"" \
                                              f"{group_data.get('GroupName')}\" " \
                                              f"allows " \
                                              f"ingress to {dst} on " \
-                                             f"protocol {egress_rule.get('IpProtocol')} " \
+                                             f"protocol {rule.get('IpProtocol')} " \
                                              f"from {ip_range.get('CidrIp')}"
 
-                for egress_rule in group_data.get("IpPermissionsEgress"):
-                    for ip_range in egress_rule.get("IpRanges"):
+                for rule in group_data.get("IpPermissionsEgress"):
+                    for ip_range in rule.get("IpRanges"):
                         if netaddr.IPAddress(src) in netaddr.IPNetwork(ip_range.get('CidrIp')):
                             sg_egress_msg = f"Security group {group_data.get('GroupId')} \"" \
                                             f"{group_data.get('GroupName')}\" " \
                                             f"allows " \
                                             f"egress to {ip_range.get('CidrIp')} on " \
-                                            f"protocol {egress_rule.get('IpProtocol')} " \
+                                            f"protocol {rule.get('IpProtocol')} " \
                                             f"from {dst}"
 
                 """
