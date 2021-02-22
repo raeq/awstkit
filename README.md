@@ -104,6 +104,21 @@ Example:
 awstkit.py reachability -s 8.8.8.8 -d 10.0.113.30 -r us-east-1 -vd vpc-XXXXXXXXXX
 ```
 
+Example results:
+
+```
+(['The searched for IP address 10.0.113.30 was found but is not in use.',
+  'No security group ingress rule found from source 8.8.8.8.'],
+ ['The searched for IP address 10.0.113.30 exists in the given VPC vpc-0ee3f414da7392532',
+  'There is an attached and available IGW igw-0abca0b589549b2cc for vpc vpc-0ee3f414da7392532',
+  'The subnet used by the ip 10.0.113.30 has the range 10.0.0.0/17 and has the state available ',
+  'The main route table has a route to the IGW igw-0abca0b589549b2cc ',
+  'Egress rule #100 allows egress to 0.0.0.0/0 using protocol -1  in acl-066fd04990e07e939',
+  'Ingress rule #100 allows ingress from 0.0.0.0/0 using protocol -1 in acl-066fd04990e07e939',
+  'Security group sg-0c539e6d394ec7dd8 "default" allows egress to 0.0.0.0/0 on protocol -1 from 10.0.113.30'])
+
+```
+
 ```
 Usage: awstkit.py reachability [OPTIONS]
 
