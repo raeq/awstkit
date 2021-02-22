@@ -177,6 +177,14 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
         if not target_igw:
             errors.append(f"There are no IGWs attached and available for this VPC")
 
+        # TODO do we have a VPN GW?
+
+        # TODO: do we have an virtual gateway?
+
+        # TODO: do we have VPC Peering?
+
+        # TODO: do we have a transit gateway?
+
         # is the VGW routed to the private IP address?
         my_subnet = public_ips[dst].get("SubnetId")
         for subnet in vpcs[target_vpc_id].get("subnets"):
@@ -204,8 +212,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
         # are we being blocked by ACLs?
         target_acl_assoc = None
         for acl in target_vpc.get("acl"):
-            ingress_msg = False
-            egress_msg = False
+            ingress_msg: str = None
+            egress_msg: str = None
 
             for acl_association in acl.get("Associations"):
                 if acl_association.get("SubnetId") == target_subnet.get("SubnetId"):
@@ -300,6 +308,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                 # if we have a prefixlistid, get the CIDRs in the prefix list and iterate
                 # get_managed_prefix_list_entries PrefixListId='string'
 
+                # TODO: Is the searched for IP address in a PrefixList?
+
             if sg_ingress_msg:
                 successes.append(sg_ingress_msg)
             else:
@@ -311,8 +321,6 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
 
         # is the port open?
 
-    if src_ip.is_global or dst_ip.is_global:
-        # here we need to check for traffic exiting the VPC
-        pass
+    # TODO check for Network Firewalls
 
     return errors, successes
