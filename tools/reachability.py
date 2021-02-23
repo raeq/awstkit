@@ -1,10 +1,9 @@
+import boto3
 import ipaddress
 import logging
+import netaddr
 from collections import defaultdict
 from pprint import pprint
-
-import boto3
-import netaddr
 
 from . import utils
 
@@ -28,11 +27,11 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                 for page in response_iterator:
                     for r in page.get("Reservations"):
                         for i in r.get("Instances"):
-                            instances[i.get("InstanceId")] = i
+                            instances[i.get("InstanceId")].append(i)
                             if i.get("PublicIpAddress"):
-                                ips[i["PublicIpAddress"]] = i
+                                ips[i["PublicIpAddress"]].append(i)
                             if i.get("PrivateIpAddress"):
-                                ips[i["PrivateIpAddress"]] = i
+                                ips[i["PrivateIpAddress"]].append(i)
             except Exception as e:
                 logger.warning(f"Failed to describe_instances in region {region} {e}")
 
@@ -43,9 +42,9 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                 for page in response_iterator:
                     for i in page.get("Addresses"):
                         if i.get("PublicIp"):
-                            ips[i["PublicIp"]] = i
+                            ips[i["PublicIp"]].append(i)
                         if i.get("PrivateIpAddress"):
-                            ips[i["PrivateIpAddress"]] = i
+                            ips[i["PrivateIpAddress"]].append(i)
             except Exception as e:
                 logger.warning(f"Failed to describe_addresses in region {region} {e}")
 
@@ -58,9 +57,9 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                     for i in page["NetworkInterfaces"]:
                         if i.get("Association"):
                             if i.get("Association").get("PublicIp"):
-                                ips[i["Association"]["PublicIp"]] = i
+                                ips[i["Association"]["PublicIp"]].append(i)
                         for x in i.get('PrivateIpAddresses'):
-                            ips[x.get('PrivateIpAddress')] = i
+                            ips[x.get('PrivateIpAddress')].append(i)
             except Exception as e:
                 logger.warning(f"Failed to describe network_interfaces in region {region} {e}")
 
@@ -89,7 +88,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                             ],
                             )
                             for page in response_iterator_igw:
-                                vpcs[v["VpcId"]]["igws"] = page.get("InternetGateways")
+                                vpcs[v["VpcId"]]["igws"].append(page.get("InternetGateways"))
 
                             # get rts
 
@@ -104,7 +103,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                             ],
                             )
                             for page in response_iterator_rts:
-                                vpcs[v["VpcId"]]["rts"] = page.get("RouteTables")
+                                vpcs[v["VpcId"]]["rts"].append(page.get("RouteTables"))
 
                             # get acls
 
@@ -119,7 +118,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                             ],
                             )
                             for page in response_iterator_acl:
-                                vpcs[v["VpcId"]]["acl"] = page.get("NetworkAcls")
+                                vpcs[v["VpcId"]]["acl"].append(page.get("NetworkAcls"))
 
                             # get subnets
                             response_iterator_subs = client.get_paginator(
@@ -133,7 +132,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                             ],
                             )
                             for page in response_iterator_subs:
-                                vpcs[v["VpcId"]]["subnets"] = page.get("Subnets")
+                                vpcs[v["VpcId"]]["subnets"].append(page.get("Subnets"))
 
             except Exception as e:
                 logger.warning(f"Failed to describe VPCs in region {region} {e}")
