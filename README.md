@@ -4,15 +4,12 @@
 
 ## findami
 
-Super useful if you know an AMI's id, but don't know which region it is in.
+Helpful if you know the Id of an AMI, but don't know which region it is in.
 
 ```
 Usage: awstkit.py findami [OPTIONS] AMI_ID...
 
   Finds information about AMIs, given a list of ids.
-
-  Decorators:     cli.command     click.argument     click.option
-  click.option
 
   Arguments:     ami_id {[string]} -- A list of ami IDs.     region {String}
   -- The single region to search.     allregions {Flag} -- Set this flag if
@@ -27,7 +24,7 @@ Options:
 
 ## checkcerts
 
-Super useful to understand your certificates. Iterates through every region and throws an error about invalid client
+Helps you to understand your certificates. Iterates through every region and throws an error about invalid client
 token if ACM is not available in the region.
 
 ```
@@ -62,7 +59,7 @@ Options:
 
 ## listaccounts
 
-Super useful to list all the OUs and their accounts in your AWS Organization. Throws an error if your profile is not the
+Lists all the OUs and their accounts in your AWS Organization. Throws an error if your profile is not the
 Org's management account.
 
 ```
@@ -93,7 +90,7 @@ Options:
 
 ## reachability
 
-Useful for performing reachability tests to see if an eni has routing from a source ip address.
+Perform a reachability test to see if an eni has routing from a source ip address.
 
 Can take a very long time in a large account with many VPCs and enis or instances. Use the ```--region```
 and ```--vpc_destination``` flags to be more specific.
