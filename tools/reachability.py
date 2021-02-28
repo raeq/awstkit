@@ -17,10 +17,10 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
     for reg in utils.get_regions('ec2'):
         if (region and region == reg) or not region:
 
-            client = session.client('ec2', region_name=reg)
+            ec2_client = session.client('ec2', region_name=reg)
 
             try:
-                response_iterator_ins = client.get_paginator(
+                response_iterator_ins = ec2_client.get_paginator(
                         "describe_instances").paginate()
 
                 for page in response_iterator_ins:
@@ -35,7 +35,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                 logger.exception(e)
 
             try:
-                response_iterator_adr = client.describe_addresses()
+                response_iterator_adr = ec2_client.describe_addresses()
                 for i in response_iterator_adr.get('Addresses'):
                     if i.get('PublicIp'):
                         ips[i['PublicIp']] = (i)
@@ -45,7 +45,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                 logger.exception(e)
 
             try:
-                response_iterator_enis = client.get_paginator(
+                response_iterator_enis = ec2_client.get_paginator(
                         "describe_network_interfaces").paginate()
 
                 for page in response_iterator_enis:
@@ -59,7 +59,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                 logger.warning(f"Failed to describe network_interfaces in region {region} {e}")
 
             try:
-                response_iterator_vpcs = client.get_paginator(
+                response_iterator_vpcs = ec2_client.get_paginator(
                         "describe_vpcs").paginate()
 
                 for page in response_iterator_vpcs:
@@ -71,7 +71,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                             vpcs[v['VpcId']]['region'] = reg
 
                             # get IGWs
-                            response_iterator_igw = client.get_paginator(
+                            response_iterator_igw = ec2_client.get_paginator(
                                     "describe_internet_gateways").paginate(Filters=[
                                 {
                                     'Name': 'attachment.vpc-id',
@@ -89,7 +89,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
 
                             # get rts
 
-                            response_iterator_rts = client.get_paginator(
+                            response_iterator_rts = ec2_client.get_paginator(
                                     "describe_route_tables").paginate(Filters=[
                                 {
                                     'Name': 'vpc-id',
@@ -106,7 +106,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                                     vpcs[v['VpcId']]['rts'] = page.get('RouteTables')
 
                             # get acls
-                            response_iterator_acl = client.get_paginator(
+                            response_iterator_acl = ec2_client.get_paginator(
                                     "describe_network_acls").paginate(Filters=[
                                 {
                                     'Name': 'vpc-id',
@@ -123,7 +123,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                                     vpcs[v['VpcId']]['acl'] = page.get('NetworkAcls')
 
                             # get subnets
-                            response_iterator_subs = client.get_paginator(
+                            response_iterator_subs = ec2_client.get_paginator(
                                     "describe_subnets").paginate(Filters=[
                                 {
                                     'Name': 'vpc-id',
@@ -204,10 +204,16 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
             successes.append(f"The searched for IP address {dst_ip} exists in the VPC {vpc}")
 
         # do we have an IGW for this VPC?
-        target_vpc = vpcs[public_ips[dst].get('VpcId')]
-        target_vpc_id = public_ips[dst].get('VpcId')
-        target_igw = None
+        target_vpc: dict = vpcs[public_ips[dst].get('VpcId')]
+        target_vpc_id: str = public_ips[dst].get('VpcId')
+        target_igw: dict = None
         target_subnet = None
+
+        msg = f"The target {target_vpc_id} is in state {target_vpc.get('metadata').get('State')}"
+        if target_vpc.get('metadata').get('State') == "available":
+            successes.append(msg)
+        else:
+            errors.append(msg)
 
         for i in target_vpc.get('igws'):
             for a in i.get('Attachments'):
