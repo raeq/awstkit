@@ -1,7 +1,6 @@
 import ipaddress
 import logging
 from collections import defaultdict
-from pprint import pprint
 
 import boto3
 import netaddr
@@ -20,12 +19,11 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
 
             client = session.client('ec2', region_name=reg)
 
-            response_iterator = None
             try:
-                response_iterator = client.get_paginator(
+                response_iterator_ins = client.get_paginator(
                         "describe_instances").paginate()
 
-                for page in response_iterator:
+                for page in response_iterator_ins:
                     for r in page.get("Reservations"):
                         for i in r.get("Instances"):
                             instances[i.get("InstanceId")] = (i)
@@ -34,27 +32,23 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                             if i.get("PrivateIpAddress"):
                                 ips[i["PrivateIpAddress"]] = (i)
             except Exception as e:
-                logger.warning(f"Failed to describe_instances in region {region} {e}")
+                logger.exception(e)
 
-            response_iterator = None
             try:
-                response_iterator = client.get_paginator(
-                        "describe_instances").paginate()
-                for page in response_iterator:
-                    for i in page.get("Addresses"):
-                        if i.get("PublicIp"):
-                            ips[i["PublicIp"]] = (i)
-                        if i.get("PrivateIpAddress"):
-                            ips[i["PrivateIpAddress"]] = (i)
+                response_iterator_adr = client.describe_addresses()
+                for i in response_iterator_adr.get("Addresses"):
+                    if i.get("PublicIp"):
+                        ips[i["PublicIp"]] = (i)
+                    if i.get("PrivateIpAddress"):
+                        ips[i["PrivateIpAddress"]] = (i)
             except Exception as e:
-                logger.warning(f"Failed to describe_addresses in region {region} {e}")
+                logger.exception(e)
 
-            response_iterator = None
             try:
-                response_iterator = client.get_paginator(
+                response_iterator_enis = client.get_paginator(
                         "describe_network_interfaces").paginate()
 
-                for page in response_iterator:
+                for page in response_iterator_enis:
                     for i in page["NetworkInterfaces"]:
                         if i.get("Association"):
                             if i.get("Association").get("PublicIp"):
@@ -64,12 +58,11 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
             except Exception as e:
                 logger.warning(f"Failed to describe network_interfaces in region {region} {e}")
 
-            response_iterator = None
             try:
-                response_iterator = client.get_paginator(
+                response_iterator_vpcs = client.get_paginator(
                         "describe_vpcs").paginate()
 
-                for page in response_iterator:
+                for page in response_iterator_vpcs:
                     for v in page["Vpcs"]:
 
                         if (vpc and vpc == v["VpcId"]) or not vpc:
@@ -113,7 +106,6 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                                     vpcs[v["VpcId"]]["rts"] = page.get("RouteTables")
 
                             # get acls
-
                             response_iterator_acl = client.get_paginator(
                                     "describe_network_acls").paginate(Filters=[
                                 {
@@ -148,6 +140,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                                     vpcs[v["VpcId"]]["subnets"] = page.get("Subnets")
 
             except Exception as e:
+                logger.exception(e)
                 logger.warning(f"Failed to describe VPCs in region {region} {e}")
 
     return ips, vpcs
@@ -175,8 +168,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
     vpcs: dict
 
     public_ips, vpcs = _get_vpc_data(session, region, vpc)
-    pprint(public_ips)
-    pprint(vpcs)
+    logger.debug(public_ips)
+    logger.debug(vpcs)
 
     errors: list = []
     successes: list = []
@@ -386,4 +379,4 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
 
     # TODO check for Network Firewalls
 
-    return errors, successes
+    return {"errors": errors, "successes": successes}
