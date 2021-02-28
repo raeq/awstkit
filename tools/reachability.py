@@ -379,4 +379,4 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
 
     # TODO check for Network Firewalls
 
-    return {"errors": errors, "successes": successes}
+    return {'errors': errors, 'successes': successes}
