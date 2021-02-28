@@ -14,7 +14,7 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
     vpcs: defaultdict = defaultdict(dict)
     instances: defaultdict = defaultdict(dict)
 
-    for reg in utils.get_regions("ec2"):
+    for reg in utils.get_regions('ec2'):
         if (region and region == reg) or not region:
 
             client = session.client('ec2', region_name=reg)
@@ -24,23 +24,23 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                         "describe_instances").paginate()
 
                 for page in response_iterator_ins:
-                    for r in page.get("Reservations"):
-                        for i in r.get("Instances"):
-                            instances[i.get("InstanceId")] = (i)
-                            if i.get("PublicIpAddress"):
-                                ips[i["PublicIpAddress"]] = (i)
-                            if i.get("PrivateIpAddress"):
-                                ips[i["PrivateIpAddress"]] = (i)
+                    for r in page.get('Reservations'):
+                        for i in r.get('Instances'):
+                            instances[i.get('InstanceId')] = (i)
+                            if i.get('PublicIpAddress'):
+                                ips[i['PublicIpAddress']] = (i)
+                            if i.get('PrivateIpAddress'):
+                                ips[i['PrivateIpAddress']] = (i)
             except Exception as e:
                 logger.exception(e)
 
             try:
                 response_iterator_adr = client.describe_addresses()
-                for i in response_iterator_adr.get("Addresses"):
-                    if i.get("PublicIp"):
-                        ips[i["PublicIp"]] = (i)
-                    if i.get("PrivateIpAddress"):
-                        ips[i["PrivateIpAddress"]] = (i)
+                for i in response_iterator_adr.get('Addresses'):
+                    if i.get('PublicIp'):
+                        ips[i['PublicIp']] = (i)
+                    if i.get('PrivateIpAddress'):
+                        ips[i['PrivateIpAddress']] = (i)
             except Exception as e:
                 logger.exception(e)
 
@@ -49,10 +49,10 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                         "describe_network_interfaces").paginate()
 
                 for page in response_iterator_enis:
-                    for i in page["NetworkInterfaces"]:
-                        if i.get("Association"):
-                            if i.get("Association").get("PublicIp"):
-                                ips[i["Association"]["PublicIp"]] = (i)
+                    for i in page['NetworkInterfaces']:
+                        if i.get('Association'):
+                            if i.get('Association').get('PublicIp'):
+                                ips[i['Association']['PublicIp']] = (i)
                         for x in i.get('PrivateIpAddresses'):
                             ips[x.get('PrivateIpAddress')] = (i)
             except Exception as e:
@@ -63,12 +63,12 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                         "describe_vpcs").paginate()
 
                 for page in response_iterator_vpcs:
-                    for v in page["Vpcs"]:
+                    for v in page['Vpcs']:
 
-                        if (vpc and vpc == v["VpcId"]) or not vpc:
+                        if (vpc and vpc == v['VpcId']) or not vpc:
 
-                            vpcs[v["VpcId"]]["metadata"] = v
-                            vpcs[v["VpcId"]]["region"] = reg
+                            vpcs[v['VpcId']]['metadata'] = v
+                            vpcs[v['VpcId']]['region'] = reg
 
                             # get IGWs
                             response_iterator_igw = client.get_paginator(
@@ -76,16 +76,16 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                                 {
                                     'Name': 'attachment.vpc-id',
                                     'Values': [
-                                        v["VpcId"],
+                                        v['VpcId'],
                                     ],
                                 },
                             ],
                             )
                             for page in response_iterator_igw:
-                                if vpcs[v["VpcId"]].get("igws"):
-                                    vpcs[v["VpcId"]]["igws"].append(page.get("InternetGateways"))
+                                if vpcs[v['VpcId']].get('igws'):
+                                    vpcs[v['VpcId']]['igws'].append(page.get('InternetGateways'))
                                 else:
-                                    vpcs[v["VpcId"]]["igws"] = page.get("InternetGateways")
+                                    vpcs[v['VpcId']]['igws'] = page.get('InternetGateways')
 
                             # get rts
 
@@ -94,16 +94,16 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                                 {
                                     'Name': 'vpc-id',
                                     'Values': [
-                                        v["VpcId"],
+                                        v['VpcId'],
                                     ],
                                 },
                             ],
                             )
                             for page in response_iterator_rts:
-                                if vpcs[v["VpcId"]].get("rts"):
-                                    vpcs[v["VpcId"]]["rts"].append(page.get("RouteTables"))
+                                if vpcs[v['VpcId']].get('rts'):
+                                    vpcs[v['VpcId']]['rts'].append(page.get('RouteTables'))
                                 else:
-                                    vpcs[v["VpcId"]]["rts"] = page.get("RouteTables")
+                                    vpcs[v['VpcId']]['rts'] = page.get('RouteTables')
 
                             # get acls
                             response_iterator_acl = client.get_paginator(
@@ -111,16 +111,16 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                                 {
                                     'Name': 'vpc-id',
                                     'Values': [
-                                        v["VpcId"],
+                                        v['VpcId'],
                                     ],
                                 },
                             ],
                             )
                             for page in response_iterator_acl:
-                                if vpcs[v["VpcId"]].get("acl"):
-                                    vpcs[v["VpcId"]]["acl"].append(page.get("NetworkAcls"))
+                                if vpcs[v['VpcId']].get('acl'):
+                                    vpcs[v['VpcId']]['acl'].append(page.get('NetworkAcls'))
                                 else:
-                                    vpcs[v["VpcId"]]["acl"] = page.get("NetworkAcls")
+                                    vpcs[v['VpcId']]['acl'] = page.get('NetworkAcls')
 
                             # get subnets
                             response_iterator_subs = client.get_paginator(
@@ -128,16 +128,16 @@ def _get_vpc_data(session: boto3.session, region="", vpc="") -> dict:
                                 {
                                     'Name': 'vpc-id',
                                     'Values': [
-                                        v["VpcId"],
+                                        v['VpcId'],
                                     ],
                                 },
                             ],
                             )
                             for page in response_iterator_subs:
-                                if vpcs[v["VpcId"]].get("subnets"):
-                                    vpcs[v["VpcId"]]["subnets"].append(page.get("Subnets"))
+                                if vpcs[v['VpcId']].get('subnets'):
+                                    vpcs[v['VpcId']]['subnets'].append(page.get('Subnets'))
                                 else:
-                                    vpcs[v["VpcId"]]["subnets"] = page.get("Subnets")
+                                    vpcs[v['VpcId']]['subnets'] = page.get('Subnets')
 
             except Exception as e:
                 logger.exception(e)
@@ -195,7 +195,7 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
 
         # is the searched for IP address in the given destination VPC?
         if vpc:
-            if public_ips[dst].get("VpcId") == vpc:
+            if public_ips[dst].get('VpcId') == vpc:
                 successes.append(f"The searched for IP address {dst_ip} exists in the given VPC {vpc}")
             else:
                 errors.append(f"The searched for IP address {dst_ip} is not in the given VPC {vpc}, it is "
@@ -204,15 +204,15 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
             successes.append(f"The searched for IP address {dst_ip} exists in the VPC {vpc}")
 
         # do we have an IGW for this VPC?
-        target_vpc = vpcs[public_ips[dst].get("VpcId")]
-        target_vpc_id = public_ips[dst].get("VpcId")
+        target_vpc = vpcs[public_ips[dst].get('VpcId')]
+        target_vpc_id = public_ips[dst].get('VpcId')
         target_igw = None
         target_subnet = None
 
-        for i in target_vpc.get("igws"):
-            for a in i.get("Attachments"):
+        for i in target_vpc.get('igws'):
+            for a in i.get('Attachments'):
                 if a.get('VpcId') == target_vpc_id:
-                    if a.get("State") == "available":
+                    if a.get('State') == "available":
                         target_igw = i
                         successes.append(f"There is an attached and available IGW "
                                          f"{i.get('InternetGatewayId')} for vpc {a.get('VpcId')}")
@@ -230,10 +230,10 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
         # TODO: do we have a transit gateway?
 
         # is the VGW routed to the private IP address?
-        my_subnet = public_ips[dst].get("SubnetId")
-        for subnet in vpcs[target_vpc_id].get("subnets"):
-            if subnet.get("SubnetId") == my_subnet:
-                if subnet.get("State") == "available":
+        my_subnet = public_ips[dst].get('SubnetId')
+        for subnet in vpcs[target_vpc_id].get('subnets'):
+            if subnet.get('SubnetId') == my_subnet:
+                if subnet.get('State') == "available":
                     successes.append(f'The subnet used by the ip {dst} '
                                      f'has the range {subnet.get("CidrBlock")} '
                                      f'and has the state {subnet.get("State")} ')
@@ -243,10 +243,10 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                                   f'has the range {subnet.get("CidrBlock")} '
                                   f'and has the state {subnet.get("State")} ')
         igw_routed: str = None
-        for route_table in target_vpc.get("rts"):
-            if route_table.get("VpcId") == target_vpc_id:
-                for route in route_table.get("Routes"):
-                    if route.get("GatewayId") == target_igw.get('InternetGatewayId'):
+        for route_table in target_vpc.get('rts'):
+            if route_table.get('VpcId') == target_vpc_id:
+                for route in route_table.get('Routes'):
+                    if route.get('GatewayId') == target_igw.get('InternetGatewayId'):
                         if route.get('State') == "active":
                             igw_routed = f"The main route table has a route to the " \
                                          f"IGW {target_igw.get('InternetGatewayId')}"
@@ -269,19 +269,19 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
 
         # are we being blocked by ACLs?
         target_acl_assoc = None
-        for acl in target_vpc.get("acl"):
+        for acl in target_vpc.get('acl'):
             ingress_msg: str = ""
             egress_msg: str = ""
 
-            for acl_association in acl.get("Associations"):
-                if acl_association.get("SubnetId") == target_subnet.get("SubnetId"):
+            for acl_association in acl.get('Associations'):
+                if acl_association.get('SubnetId') == target_subnet.get('SubnetId'):
                     target_acl_assoc = acl
 
-                    for entry in acl.get("Entries"):
-                        if entry.get("Egress") == False:
+                    for entry in acl.get('Entries'):
+                        if entry.get('Egress') == False:
                             # ingress rule
-                            if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get("CidrBlock")):
-                                if entry.get("RuleAction") == "allow":
+                            if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get('CidrBlock')):
+                                if entry.get('RuleAction') == "allow":
                                     successes.append(f"Ingress rule #{entry.get('RuleNumber')} allows ingress from "
                                                      f"{entry.get('CidrBlock')} "
                                                      f"using protocol {entry.get('Protocol')} "
@@ -294,8 +294,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                                                 f" in {acl.get('NetworkAclId')}")
                         else:
                             # egress rule
-                            if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get("CidrBlock")):
-                                if entry.get("RuleAction") == "allow":
+                            if netaddr.IPAddress(src) in netaddr.IPNetwork(entry.get('CidrBlock')):
+                                if entry.get('RuleAction') == "allow":
                                     successes.append(f"Egress rule #{entry.get('RuleNumber')} allows egress to "
                                                      f"{entry.get('CidrBlock')} "
                                                      f"using protocol {entry.get('Protocol')} "
@@ -315,7 +315,7 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
         if target_eni:
             # get the ip address dictionary
             my_ip: dict = public_ips.get(dst)
-            groups: dict = my_ip.get("Groups")
+            groups: dict = my_ip.get('Groups')
 
             # get the Groups
             sg_ingress_msg: str = None
@@ -323,10 +323,10 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
 
             for group in groups:
                 reg = utils.region_from_az(
-                        public_ips[dst].get("AvailabilityZone"))
+                        public_ips[dst].get('AvailabilityZone'))
                 client = session.client('ec2', region_name=reg)
 
-                group_name = group.get("GroupId")
+                group_name = group.get('GroupId')
                 response = client.describe_security_groups(
                         GroupIds=[group_name]
                 )
@@ -334,8 +334,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                 group_data = response['SecurityGroups'][0]
 
                 # Iterate rules
-                for rule in group_data.get("IpPermissions"):
-                    for ip_range in rule.get("IpRanges"):
+                for rule in group_data.get('IpPermissions'):
+                    for ip_range in rule.get('IpRanges'):
                         if netaddr.IPAddress(src) in netaddr.IPNetwork(ip_range.get('CidrIp')):
                             sg_ingress_msg = f"Security group {group_data.get('GroupId')} \"" \
                                              f"{group_data.get('GroupName')}\" " \
@@ -343,8 +343,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                                              f"ingress to {dst} in {ip_range.get('CidrIp')} using " \
                                              f"protocol {rule.get('IpProtocol')} "
 
-                for rule in group_data.get("IpPermissionsEgress"):
-                    for ip_range in rule.get("IpRanges"):
+                for rule in group_data.get('IpPermissionsEgress'):
+                    for ip_range in rule.get('IpRanges'):
                         if netaddr.IPAddress(dst) in netaddr.IPNetwork(ip_range.get('CidrIp')):
                             sg_egress_msg = f"Security group {group_data.get('GroupId')} \"" \
                                             f"{group_data.get('GroupName')}\" " \
