@@ -69,10 +69,8 @@ def _get_vpc_data(session: boto3.session,
         """
         if not method:
             raise AttributeError()
-        if not filters:
-            filters = []
 
-        return ec2_client.get_paginator(method).paginate(Filters=filters)
+        return ec2_client.get_paginator(method).paginate(Filters=filters or [])
 
     for reg in utils.get_regions("ec2"):
         if (region and region == reg) or not region:
