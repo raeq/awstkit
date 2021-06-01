@@ -30,8 +30,13 @@ def get_resources(resource_type: str = "AWS::EC2::Instance", profile: str = "def
     if not aggregator:
         # no aggregator name given
         # let's try to get the first one available
-        aggregator = config.describe_configuration_aggregators().get("ConfigurationAggregators")[0].get(
-                "ConfigurationAggregatorName")
+        try:
+            aggregator = config.describe_configuration_aggregators().get("ConfigurationAggregators")[0].get(
+                    "ConfigurationAggregatorName")
+        except IndexError as e:
+            logger.exception(e)
+            print("You do not have any resource aggregations in AWS Config.")
+            return
 
     results: list = []
     logger.debug(f'Accessing config aggregator for resource type: {resource_type} '
