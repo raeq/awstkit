@@ -4,17 +4,18 @@ from collections import defaultdict
 
 import boto3
 import netaddr
+from boto3 import session
 
 from . import utils
 
 
-def _get_vpc_data(session: boto3.session,
+def _get_vpc_data(a_session: session,
                   region="",
                   vpc="") -> tuple[defaultdict, defaultdict]:
     """_get_vpc_data.
 
     Args:
-        session (boto3.session): session
+        a_session (boto3.session): session
         region:
         vpc:
 
@@ -42,8 +43,8 @@ def _get_vpc_data(session: boto3.session,
             raise AttributeError()
 
         for page in get_page(method, page_name, filters):
-            for i in page.get(item):
-                yield i
+            for _item_data in page.get(item):
+                yield _item_data
 
     def get_page(method: str, page_name: str, filters: list = None):
         """get_page.
@@ -75,7 +76,7 @@ def _get_vpc_data(session: boto3.session,
     for reg in utils.get_regions("ec2"):
         if (region and region == reg) or not region:
 
-            ec2_client = session.client("ec2", region_name=reg)
+            ec2_client = a_session.client("ec2", region_name = reg)
 
             try:
                 for i in get_page_item("describe_instances", "Reservations",
@@ -232,12 +233,12 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
     # here we need to get the CIDR of this VPC
     # VPC is a regional service. Each region can have 0:m VPCs
 
-    session = boto3.session.Session(profile_name=profile)
+    this_session = boto3.session.Session(profile_name = profile)
 
     public_ips: dict
     vpcs: dict
 
-    public_ips, vpcs = _get_vpc_data(session, region, vpc)
+    public_ips, vpcs = _get_vpc_data(this_session, region, vpc)
     logger.debug(public_ips)
     logger.debug(vpcs)
 
@@ -379,7 +380,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                                     entry.get("CidrBlock")):
                                 if entry.get("RuleAction") == "allow":
                                     successes.append(
-                                            f"Ingress rule #{entry.get('RuleNumber')} allows ingress from "
+                                            f"Ingress rule #{entry.get('RuleNumber')} in acl "
+                                            f"{acl.get('NetworkAclId')} allows ingress from "
                                             f"{entry.get('CidrBlock')} "
                                             f"using protocol {entry.get('Protocol')} "
                                             f"in {acl.get('NetworkAclId')}")
@@ -387,7 +389,8 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
                                 else:
                                     if not ingress_msg:
                                         errors.append(
-                                                f"Ingress rule #{entry.get('RuleNumber')} denies ingress from {src}"
+                                                f"Ingress rule #{entry.get('RuleNumber')}  in acl "
+                                                f"{acl.get('NetworkAclId')} denies ingress from {src}"
                                                 f" in {acl.get('NetworkAclId')}")
                         else:
                             # egress rule
@@ -428,7 +431,7 @@ def is_reachable(vpc="", region="", profile="", src="", dst=""):
             for group in groups:
                 reg = utils.region_from_az(
                         public_ips[dst].get("AvailabilityZone"))
-                client = session.client("ec2", region_name=reg)
+                client = this_session.client("ec2", region_name = reg)
 
                 group_name = group.get("GroupId")
                 response = client.describe_security_groups(
