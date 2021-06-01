@@ -134,7 +134,7 @@ Options:
   --help                       Show this message and exit.
 ```
 
-## Resources
+## resources
 
 Will use an AWS Config Aggregator to list resources of the specified type. The default type is "AWS::EC2""Instance". If
 you don't have an aggregator configured within the scope of the profile you're using, this won't work.
