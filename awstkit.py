@@ -165,7 +165,7 @@ def reachability(vpc_destination: str, region: str, profile: str, source, destin
 "The awscli configuration profile for the master account.")
 @click.option("--resource_type", "-rt", default = "", help = "Restrict search to this specific resource type.")
 @click.option("--aggregator", "-ag", default = "", help = "Use this AWS Config Aggregator name.")
-def resources(resource_type: str, profile: str, aggregator: str):
+def aggregate_resources(resource_type: str, profile: str, aggregator: str):
     """Returns the resources in the chosen config resource aggregator.
     """
 
