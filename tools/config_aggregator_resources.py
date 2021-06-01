@@ -8,6 +8,20 @@ import botocore.exceptions
 @backoff.on_exception(backoff.expo, botocore.exceptions.ClientError)
 def get_resources(resource_type: str = "AWS::EC2::Instance", profile: str = "default",
                   aggregator: str = "") -> dict:
+    """
+    Get the resources of a specified type from the specified config aggregator.
+    Uses the first available aggregator if no aggregator is specified. Or it dies with an error.
+    This is a generator, yielding individual resources. Loop over it to a acuomatically call __next__()
+
+    :param resource_type:
+    :type resource_type:
+    :param profile:
+    :type profile:
+    :param aggregator:
+    :type aggregator:
+    :return:
+    :rtype: A dict describing a resource
+    """
     logger = logging.getLogger(__name__)
 
     session = boto3.session.Session(profile_name = profile)

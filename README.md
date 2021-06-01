@@ -136,7 +136,7 @@ Options:
 
 ## aggregate_resources
 
-Will use an AWS Config Aggregator to list resources of the specified type. The default type is "AWS::EC2""Instance". If
+Will use an AWS Config Aggregator to list resources of the specified type. The default type is "AWS::EC2::Instance". If
 you don't have an aggregator configured within the scope of the profile you're using, this won't work.
 
 If you can't remember the name of the aggregator you'd like to use, or if you forget to specify it, the script will
