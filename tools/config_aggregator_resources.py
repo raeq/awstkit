@@ -2,15 +2,22 @@ import logging
 
 import backoff
 import boto3
+import botocore.exceptions
 
 
-@backoff.on_exception(backoff.expo, Exception)
-def get_resources(resource_type: str = "AWS::EC2::Instance", profile: str = "",
+@backoff.on_exception(backoff.expo, botocore.exceptions.ClientError)
+def get_resources(resource_type: str = "AWS::EC2::Instance", profile: str = "default",
                   aggregator: str = "") -> dict:
     logger = logging.getLogger(__name__)
 
     session = boto3.session.Session(profile_name = profile)
     config = session.client("config")
+
+    if not aggregator:
+        # no aggregator name given
+        # let's try to get the first one available
+        aggregator = config.describe_configuration_aggregators().get("ConfigurationAggregators")[0].get(
+                "ConfigurationAggregatorName")
 
     results: list = []
     logger.debug(f'Accessing config aggregator for resource type: {resource_type} '
