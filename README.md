@@ -133,3 +133,27 @@ Options:
   -d, --destination TEXT       The destination IP address
   --help                       Show this message and exit.
 ```
+
+## Resources
+
+Will use an AWS Config Aggregator to list resources of the specified type. The default type is "AWS::EC2""Instance". If
+you don't have an aggregator configured within the scope of the profile you're using, this won't work.
+
+If you can't remember the name of the aggregator you'd like to use, or if you forget to specify it, the script will
+attempt to use the first aggregator it finds.
+
+```
+Usage: awstkit.py resources [OPTIONS]
+
+  Returns the resources in the chosen config resource aggregator.
+
+Options:
+  -p, --profile TEXT         The awscli configuration profile for the master
+                             account.
+
+  -rt, --resource_type TEXT  Restrict search to this specific resource type.
+  -ag, --aggregator TEXT     Use this AWS Config Aggregator name.
+  --help                     Show this message and exit.
+
+```
+
