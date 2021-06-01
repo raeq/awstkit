@@ -27,12 +27,12 @@ def get_ami_allregions(ami_id, specific_region, profile: str = ""):
         n = n + 1
         logger.debug(str(f"Attempting region {region} "))
         if (specific_region and specific_region == region) or not specific_region:
-            ans = get_ami_info(ami_dict, region, profile, n)
+            ami_dict = get_ami_info(ami_dict, region, profile, n)
 
     return ami_dict
 
 
-def get_ami_info(ami_dict, region, profile: str = "", n=0):
+def get_ami_info(amis, region, profile: str = "", n=0):
     """For a specific region, search for ami descriptions
     for each amiid in a dictionary
 
@@ -46,18 +46,19 @@ def get_ami_info(ami_dict, region, profile: str = "", n=0):
     logger = logging.getLogger(__name__)
     session = boto3.session.Session(profile_name=profile)
     ec2_client = session.client('ec2', region_name=region)
-    for ami_id in ami_dict:
+    for ami_id in amis:
 
-        if not ami_dict[ami_id]:
+        if not amis[ami_id]:
             logger.debug(str(f"Searching for {ami_id} in {region}"))
             try:
                 ami_info = ec2_client.describe_images(
-                        ImageIds=[ami_id])['Images'][0]
+                        ImageIds = [ami_id])['Images'][0]
                 ami_info['Region'] = region
-                ami_dict[ami_id] = ami_info
+                amis[ami_id] = ami_info
                 logger.log(logging.INFO, str(
                         'Found {} [{}]').format(ami_id, ami_info))
             except ClientError as e:
                 logger.log(logging.DEBUG, e.response)
             except IndexError:
                 return {}
+    return amis
