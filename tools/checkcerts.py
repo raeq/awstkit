@@ -36,12 +36,11 @@ def _get_certs(specific_region, session):
 
     for region in available_regions:
 
-        logger.debug(f"Searching '{region}' for certs.")
+        logger.info(f"Searching '{region}' for certs.")
         try:
             client = session.client("acm", region_name=region)
         except botocore.exceptions.ClientError as e:
             logger.exception(e)
-            continue
 
         if client:
             try:
@@ -57,7 +56,7 @@ def _get_certs(specific_region, session):
                                     CertificateArn=i["CertificateArn"])
                             certs.append(c)
                 except Exception as e:
-                    logger.warn(e)
+                    logger.warning(e)
     return certs
 
 
