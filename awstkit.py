@@ -48,12 +48,12 @@ def cli():
 def listaccounts(profile: str):
     """Lists all accounts in an Organization.
     """
-    import pprint
 
     logger.debug(f"Begin listing accounts using profile {profile}")
 
     try:
-        pprint.pprint(list_all_accounts(profile))
+        for k, v in enumerate(list_all_accounts(profile)):
+            print(f'{k}\t{v}')
     except be.NoCredentialsError as e:
         logger.critical("No credentials found.", exc_info = True)
     except be.BotoCoreError as e:
