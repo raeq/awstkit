@@ -17,50 +17,54 @@ def parent_details(client=None, childId: str = None) -> dict:
     return client.describe_organizational_unit(OrganizationalUnitId = parent.get("Id")).get("OrganizationalUnit")
 
 
-def account_details(client=None, child: dict = None) -> dict:
+def account_details(client=None, child: dict = None, getPolicies: bool = False, getParent: bool = False) -> dict:
     if not child or not client:
         return dict()
 
     cid: str = child.get("Id")
 
-    child["Parent"] = parent_details(client, cid)
+    if getParent:
+        child["Parent"] = parent_details(client, cid)
 
     tags = client.list_tags_for_resource(
             ResourceId = cid).get("Tags")
     child["Tags"] = {i.get("Key"): i.get("Value") for i in tags}
-    try:
-        child["TAG_POLICY"] = client.describe_effective_policy(
-                PolicyType = "TAG_POLICY",
-                TargetId = cid).get("EffectivePolicy")
-    except ClientError as e:
-        child["TAG_POLICY"] = ""
-    try:
-        child["BACKUP_POLICY"] = client.describe_effective_policy(
-                PolicyType = "BACKUP_POLICY",
-                TargetId = cid).get("EffectivePolicy")
-    except ClientError as e:
-        child["BACKUP_POLICY"] = ""
-    try:
-        child["AISERVICES_OPT_OUT_POLICY"] = client.describe_effective_policy(
-                PolicyType = "AISERVICES_OPT_OUT_POLICY",
-                TargetId = cid).get("EffectivePolicy")
-    except ClientError as e:
-        child["AISERVICES_OPT_OUT_POLICY"] = ""
-    try:
-        child[
-            "SERVICE_CONTROL_POLICY"] = client.list_policies_for_target(
-                Filter = "SERVICE_CONTROL_POLICY",
-                TargetId = cid).get("Policies")
-    except ClientError as e:
-        child["SERVICE_CONTROL_POLICY"] = ""
-    try:
-        child[
-            "DelegatedServices"] = client.list_delegated_services_for_account(
-                AccountId = cid).get("DelegatedServices")
-    except ClientError as e:
-        if e.response["Error"][
-            "Code"] == "AccountNotRegisteredException":
-            child["DelegatedServices"] = []
+
+    if getPolicies:
+        try:
+            child["TAG_POLICY"] = client.describe_effective_policy(
+                    PolicyType = "TAG_POLICY",
+                    TargetId = cid).get("EffectivePolicy")
+        except ClientError as e:
+            child["TAG_POLICY"] = ""
+        try:
+            child["BACKUP_POLICY"] = client.describe_effective_policy(
+                    PolicyType = "BACKUP_POLICY",
+                    TargetId = cid).get("EffectivePolicy")
+        except ClientError as e:
+            child["BACKUP_POLICY"] = ""
+        try:
+            child["AISERVICES_OPT_OUT_POLICY"] = client.describe_effective_policy(
+                    PolicyType = "AISERVICES_OPT_OUT_POLICY",
+                    TargetId = cid).get("EffectivePolicy")
+        except ClientError as e:
+            child["AISERVICES_OPT_OUT_POLICY"] = ""
+        try:
+            child[
+                "SERVICE_CONTROL_POLICY"] = client.list_policies_for_target(
+                    Filter = "SERVICE_CONTROL_POLICY",
+                    TargetId = cid).get("Policies")
+        except ClientError as e:
+            child["SERVICE_CONTROL_POLICY"] = ""
+        try:
+            child[
+                "DelegatedServices"] = client.list_delegated_services_for_account(
+                    AccountId = cid).get("DelegatedServices")
+        except ClientError as e:
+            if e.response["Error"][
+                "Code"] == "AccountNotRegisteredException":
+                child["DelegatedServices"] = []
+
     return child
 
 

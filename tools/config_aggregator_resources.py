@@ -2,10 +2,9 @@ import logging
 
 import backoff
 import boto3
-import botocore.exceptions
 
 
-@backoff.on_exception(backoff.expo, botocore.exceptions.ClientError)
+@backoff.on_exception(backoff.expo, Exception)
 def get_resources(resource_type: str = "AWS::EC2::Instance", profile: str = "default",
                   aggregator: str = "") -> dict:
     """
